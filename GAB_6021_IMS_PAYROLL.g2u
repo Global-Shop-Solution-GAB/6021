@@ -1,0 +1,122 @@
+Program.Sub.ScreenSU.Start
+Gui.frmPayrollHours..Create(BaseForm)
+Gui.frmPayrollHours..Caption("Payroll File Generation")
+Gui.frmPayrollHours..Size(839,575)
+Gui.frmPayrollHours..MinX(0)
+Gui.frmPayrollHours..MinY(0)
+Gui.frmPayrollHours..Position(0,0)
+Gui.frmPayrollHours..AlwaysOnTop(False)
+Gui.frmPayrollHours..FontName("Tahoma")
+Gui.frmPayrollHours..FontSize(8.25)
+Gui.frmPayrollHours..ControlBox(True)
+Gui.frmPayrollHours..MaxButton(True)
+Gui.frmPayrollHours..MinButton(True)
+Gui.frmPayrollHours..MousePointer(0)
+Gui.frmPayrollHours..Moveable(True)
+Gui.frmPayrollHours..Sizeable(True)
+Gui.frmPayrollHours..ShowInTaskBar(True)
+Gui.frmPayrollHours..TitleBar(True)
+Gui.frmPayrollHours..Event(UnLoad,frmPayrollHours_UnLoad)
+Gui.frmPayrollHours.dtpBeginDate.Create(DatePicker)
+Gui.frmPayrollHours.dtpBeginDate.Enabled(True)
+Gui.frmPayrollHours.dtpBeginDate.Visible(True)
+Gui.frmPayrollHours.dtpBeginDate.Zorder(0)
+Gui.frmPayrollHours.dtpBeginDate.Size(100,20)
+Gui.frmPayrollHours.dtpBeginDate.Position(12,24)
+Gui.frmPayrollHours.dtpBeginDate.CheckBox(False)
+Gui.frmPayrollHours.dtpBeginDate.FontName("Tahoma")
+Gui.frmPayrollHours.dtpBeginDate.FontSize(8.25)
+Gui.frmPayrollHours.dtpEndDate.Create(DatePicker)
+Gui.frmPayrollHours.dtpEndDate.Enabled(True)
+Gui.frmPayrollHours.dtpEndDate.Visible(True)
+Gui.frmPayrollHours.dtpEndDate.Zorder(0)
+Gui.frmPayrollHours.dtpEndDate.Size(100,20)
+Gui.frmPayrollHours.dtpEndDate.Position(200,22)
+Gui.frmPayrollHours.dtpEndDate.CheckBox(False)
+Gui.frmPayrollHours.dtpEndDate.FontName("Tahoma")
+Gui.frmPayrollHours.dtpEndDate.FontSize(8.25)
+Gui.frmPayrollHours.lblStartDate.Create(Label,"Start Date",True,50,13,0,13,7,True,0,"Tahoma",8.25,,0,0)
+Gui.frmPayrollHours.lblStartDate.BorderStyle(0)
+Gui.frmPayrollHours.lblStartDate2.Create(Label,"End Date",True,44,13,0,201,5,True,0,"Tahoma",8.25,,0,0)
+Gui.frmPayrollHours.lblStartDate2.BorderStyle(0)
+Gui.frmPayrollHours.gsgcHours.Create(GsGridControl)
+Gui.frmPayrollHours.gsgcHours.Enabled(True)
+Gui.frmPayrollHours.gsgcHours.Visible(True)
+Gui.frmPayrollHours.gsgcHours.Zorder(0)
+Gui.frmPayrollHours.gsgcHours.Size(819,492)
+Gui.frmPayrollHours.gsgcHours.Position(12,50)
+Gui.frmPayrollHours.cmdProcess.Create(Button)
+Gui.frmPayrollHours.cmdProcess.Enabled(True)
+Gui.frmPayrollHours.cmdProcess.Visible(True)
+Gui.frmPayrollHours.cmdProcess.Zorder(0)
+Gui.frmPayrollHours.cmdProcess.Size(75,23)
+Gui.frmPayrollHours.cmdProcess.Position(342,21)
+Gui.frmPayrollHours.cmdProcess.Caption("Process")
+Gui.frmPayrollHours.cmdProcess.FontName("Tahoma")
+Gui.frmPayrollHours.cmdProcess.FontSize(8.25)
+Gui.frmPayrollHours.cmdProcess.Event(Click,cmdProcess_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+Function.Intrinsic.UI.UsePixels ' Allows you to use Pixels instead of Twips throughout
+f.Intrinsic.Control.CallSub(cmdProcess_click)
+Program.Sub.Main.End
+
+Program.Sub.cmdProcess_Click.Start
+f.Intrinsic.Control.Try
+	'hook #15290
+	f.ODBC.Connection!con.opencompanyconnection(60)
+	v.Local.ssql.Declare
+	v.Local.dDateRun.Declare
+	v.local.sDateRun.Declare
+	v.Local.sTimeRun.Declare
+	v.Local.sFile.Declare
+	v.Local.sName.Declare
+	v.Local.sLine.Declare
+	v.Local.sCode.Declare
+	v.Local.i.Declare
+	
+	'Get the Max Date and Max Run from the PYRL LABOR XREF table
+	F.ODBC.Connection!con.executeandreturn("SELECT MAX(RUN_CYMD) FROM V_PYRL_LABOR_XFER",v.local.dDateRun)
+	f.Intrinsic.String.Build("select max(run_time) from V_PYRL_LABOR_XFER where run_cymd='{0}'",v.Local.dDateRun.PervasiveDate,v.Local.ssql)
+	f.ODBC.Connection!con.executeandreturn(v.Local.ssql,v.Local.sTimeRun)
+	f.Intrinsic.String.Build("select * from V_PYRL_LABOR_XFER where run_cymd='{0}' and run_time='{1}'",v.Local.dDateRun.PervasiveDate,v.Local.sTimeRun,v.Local.ssql)
+	f.Data.DataTable.CreateFromSQL("dtRec","con",v.Local.ssql,true)
+	f.Intrinsic.Control.For(v.Local.i,0,v.DataTable.dtRec.RowCount--,1)
+		f.Intrinsic.Control.If(v.DataTable.dtRec(v.Local.i).Employee!fieldvallong,<,90000)
+			F.Intrinsic.Control.SelectCase(v.DataTable.dtRec(v.Local.i).DESCR!FIELDVALTRIM)
+				f.Intrinsic.Control.Case("1-Regular")
+					v.Local.sCode.Set(1)
+				f.Intrinsic.Control.Case("2-Overtime")
+					v.Local.sCode.Set(15)
+				f.Intrinsic.Control.CaseElse
+					v.Local.sCode.Set(v.DataTable.dtRec(v.Local.i).DESCR!FIELDVALTRIM)
+			F.Intrinsic.Control.EndSelect
+			f.Intrinsic.String.Concat(v.DataTable.dtRec(v.Local.i).Employee!fieldvallong,",",v.local.sCode,",",v.DataTable.dtRec(v.Local.i).Hours!fieldvalfloat,",,",v.Local.sLine)
+			f.Intrinsic.String.Concat(v.Local.sFile,v.Local.sLine,v.Ambient.NewLine,v.Local.sFile)
+		f.Intrinsic.Control.EndIf
+	f.Intrinsic.Control.Next(v.Local.i)
+	'Create the file
+	f.Intrinsic.String.Format(v.Local.dDateRun,"DDMMYYY",v.Local.sDateRun)
+	f.Intrinsic.String.Concat(v.Caller.FilesDir,"\payroll ",v.Local.sDateRun,".txt",v.Local.sName)
+	f.Intrinsic.File.String2File(v.Local.sName,v.Local.sFile)
+	f.Intrinsic.Task.ShellExec(1,"", v.Local.sName, "", "", 1)
+	
+f.Intrinsic.Control.Catch
+	f.Intrinsic.UI.Msgbox(v.Ambient.ErrorDescription)
+	f.Intrinsic.Control.CallSub(frmPayrollHours_Unload)
+f.Intrinsic.Control.EndTry
+Program.Sub.cmdProcess_Click.End
+
+Program.Sub.frmPayrollHours_UnLoad.Start
+f.ODBC.Connection!con.Close
+f.Intrinsic.Control.End
+Program.Sub.frmPayrollHours_UnLoad.End
+
+Program.Sub.Comments.Start
+${$5$}$3.0.0.0$}$1
+${$6$}$rfisher$}$20200528132738209$}$b10QVt26jzz6R0J+Y14BUjvWwMpAez4tuwPyImcPe6dS8CJQfDQFJU8Ro2V4Z/7VS8YGdv78fjI=
+Program.Sub.Comments.End
